@@ -34,6 +34,7 @@ services:
       - "-c"
       - "pg_stat_statements.track=all"
     environment:
+<<<<<<< HEAD
       POSTGRES_DB: ${PG_DB_NAME}
       POSTGRES_USER: ${PG_DB_USER}
       POSTGRES_PASSWORD: ${PG_DB_PASS}
@@ -45,6 +46,19 @@ services:
       - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U bot -d sendman_bot"]
+=======
+      POSTGRES_DB: "suggest_bot"
+      POSTGRES_USER: "bot"
+      POSTGRES_PASSWORD: "pgpwd4bot"
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    volumes:
+      - ./init:/docker-entrypoint-initdb.d
+      - ./data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bot -d suggest_bot"]
+>>>>>>> b280105098c89b8eada8000806df4951558d0087
       interval: 10s
       timeout: 5s
       retries: 5
@@ -60,7 +74,10 @@ services:
         limits:
           cpus: '1'
           memory: 4G
+<<<<<<< HEAD
     networks:
       default:
         ipv4_address: ${PROJECT_IP_MASK}.10
 
+=======
+>>>>>>> b280105098c89b8eada8000806df4951558d0087
