@@ -34,10 +34,6 @@ services:
       - "-c"
       - "pg_stat_statements.track=all"
     environment:
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> 7484d6e16e063dc617bbb636d8b189e6e9760af2
       POSTGRES_DB: ${PG_DB_NAME}
       POSTGRES_USER: ${PG_DB_USER}
       POSTGRES_PASSWORD: ${PG_DB_PASS}
@@ -48,11 +44,7 @@ services:
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U bot -d sendman_bot"]
-<<<<<<< HEAD
-=======
-=======
->>>>>>> 7484d6e16e063dc617bbb636d8b189e6e9760af2
+      test: ["CMD-SHELL", "pg_isready -U ${PG_DB_USER} -d ${PG_DB_NAME}"]
       POSTGRES_DB: "suggest_bot"
       POSTGRES_USER: "bot"
       POSTGRES_PASSWORD: "pgpwd4bot"
@@ -64,10 +56,6 @@ services:
       - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U bot -d suggest_bot"]
-<<<<<<< HEAD
-=======
->>>>>>> b280105098c89b8eada8000806df4951558d0087
->>>>>>> 7484d6e16e063dc617bbb636d8b189e6e9760af2
       interval: 10s
       timeout: 5s
       retries: 5
@@ -83,16 +71,7 @@ services:
         limits:
           cpus: '1'
           memory: 4G
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> 7484d6e16e063dc617bbb636d8b189e6e9760af2
     networks:
       default:
         ipv4_address: ${PROJECT_IP_MASK}.10
 
-<<<<<<< HEAD
-=======
-=======
->>>>>>> b280105098c89b8eada8000806df4951558d0087
->>>>>>> 7484d6e16e063dc617bbb636d8b189e6e9760af2
