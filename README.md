@@ -1,4 +1,4 @@
-# suggest-bot
+# sendman-bot
 It is a pet-project telegram-bot for sending messages to subscribers of bot (golang, postgresql, rabbitmq)
 
 1. Put your bot-token in config.yml
