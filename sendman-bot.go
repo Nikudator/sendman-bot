@@ -75,7 +75,7 @@ func main() {
 
 	for update := range updates {
 		if update.Message != nil {
-			log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
+			log.Printf("[%s] %s\n", update.Message.From.UserName, update.Message.Text)
 
 			var msg tgbotapi.MessageConfig
 
