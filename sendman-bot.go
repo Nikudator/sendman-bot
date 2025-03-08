@@ -21,20 +21,18 @@ var pool *pgxpool.Pool
 
 func createUser(tid int64, uname string) error {
 
-	queryCheck := `SELECT COUNT(*) FROM botusers WHERE tid = $1`
+	queryCheck := "SELECT COUNT(*) FROM botusers WHERE tid = $1"
 	var count int
 	err := pool.QueryRow(context.Background(), queryCheck, tid).Scan(&count)
 	failOnError(err, "Can't check user.\n")
 	if count < 1 {
-		queryCreate := `INSERT INTO botusers (tid, uname)
-        	VALUES ($1, $2)
-        	RETURNING id`
+		queryCreate := "INSERT INTO botusers (tid, uname) VALUES ($1, $2) RETURNING id"
 		var id int
 		err := pool.QueryRow(context.Background(), queryCreate, tid, uname).Scan(&id)
 		failOnError(err, "Can't create user.\n")
 		log.Printf("Created user with ID: %d, TID: %d, NAME: %s.\n", id, tid, uname)
 	}
-
+	return err
 }
 
 func main() {
@@ -78,6 +76,7 @@ func main() {
 	failOnError(err, "Unable to connection to database: %v.\n")
 
 	defer pool.Close()
+
 	log.Print("Connected to database!\n")
 
 	//Создаём бота
