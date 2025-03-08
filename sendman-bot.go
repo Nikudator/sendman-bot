@@ -21,6 +21,7 @@ func failOnError(err error, msg string) { //Делаем более читаем
 
 var pool *pgxpool.Pool
 var rconn *amqp.Connection
+var bot *tgbotapi.BotAPI
 
 func createUser(tid int64, uname string) error {
 
@@ -110,7 +111,7 @@ func main() {
 	defer cancel()
 
 	//Создаём бота
-	bot, err := tgbotapi.NewBotAPI(bot_token)
+	bot, err = tgbotapi.NewBotAPI(bot_token)
 	failOnError(err, "Can't registration bot token.\n")
 
 	bot.Debug = true
