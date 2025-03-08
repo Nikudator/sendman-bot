@@ -28,4 +28,4 @@ go.work.sum
 config.yml
 
 # pgdata
-postgresql/data
+docker/data

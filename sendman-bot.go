@@ -99,12 +99,12 @@ func main() {
 		if update.Message != nil {
 			log.Printf("[%s] %s\n", update.Message.From.UserName, update.Message.Text)
 
+			//createUser не вынесена в "start", потому что в случае краша базы, пользователи повторно будут добавляться в новую.
 			createUser(update.Message.Chat.ID, update.Message.From.UserName)
 
 			var msg tgbotapi.MessageConfig
 			switch update.Message.Command() {
 			case "start":
-
 				msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Приветствую! Я бот для информирования мужчин о работе по борьбе за мужские права.\nТеперь иногда вы будете получать от меня важные информационные сообщения.")
 			case "help":
 				msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Я поддерживаю следующие комманды:\n/start - Старт бота\n/help - Показать помощь\n/petition - Получить список петиций, в которых необходимо ваше участие\nЕсли хотите написать администратору сообщение, просто напишите его и, если нужно, прикрепите фото или видео.")
