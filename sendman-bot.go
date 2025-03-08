@@ -92,10 +92,10 @@ func main() {
 
 	//Инициализация RabbitMQ
 	rconn, err = amqp.Dial(fmt.Sprintf("amqp://%s:%s@%s:%d/", rabbit_user, rabbit_pass, rabbit_host, rabbit_port))
-	failOnError(err, "Failed to connect to RabbitMQ")
+	failOnError(err, "Failed to connect to RabbitMQ\n")
 	defer rconn.Close()
 	rch, err := rconn.Channel()
-	failOnError(err, "Failed to open a channel")
+	failOnError(err, "Failed to open a channel\n")
 	defer rch.Close()
 	q, err := rch.QueueDeclare(
 		"sender", // name
@@ -105,7 +105,7 @@ func main() {
 		false,    // no-wait
 		nil,      // arguments
 	)
-	failOnError(err, "Failed to declare a queue")
+	failOnError(err, "Failed to declare a queue\n")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
