@@ -11,6 +11,12 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+func failOnError(err error, msg string) { //Делаем более читаемую и компактную обработку ошибок.
+	if err != nil {
+		log.Panicf("%s: %s", msg, err)
+	}
+}
+
 func main() {
 	//Читаем конфиг
 	const configPath = "config.yml"
@@ -27,18 +33,12 @@ func main() {
 	}
 	var AppConfig *Cfg
 	f, err := os.Open(configPath)
-
-	if err != nil {
-		log.Panic(err)
-	}
+	failOnError(err, "Can't open config.\n")
 	defer f.Close()
 
 	decoder := yaml.NewDecoder(f)
 	err = decoder.Decode(&AppConfig)
-
-	if err != nil {
-		log.Panic(err)
-	}
+	failOnError(err, "Can't decode config.\n")
 
 	bot_token := AppConfig.TELEGRAM_BOT_API_TOKEN
 	postgres_host := AppConfig.POSTGRES_HOST
@@ -55,19 +55,14 @@ func main() {
 		postgres_user, postgres_pass, postgres_host, postgres_port, postgres_db, postgres_ssl, postgres_pool_max_conns)
 
 	pool, err := pgxpool.New(context.Background(), dbURL)
-	if err != nil {
-		log.Panicf("Unable to connection to database: %v\n", err)
-	}
+	failOnError(err, "Unable to connection to database: %v.\n")
 
 	defer pool.Close()
-	log.Print("Connected to database!")
+	log.Print("Connected to database!\n")
 
 	//Создаём бота
 	bot, err := tgbotapi.NewBotAPI(bot_token)
-
-	if err != nil {
-		log.Panic(err)
-	}
+	failOnError(err, "Can't registration bot token.\n")
 
 	bot.Debug = true
 
@@ -86,14 +81,16 @@ func main() {
 
 			switch update.Message.Command() {
 			case "start":
-				msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Приветствую! Я бот для отправки сообщений и постов на канал \"Реальное Шушенское\"")
+				msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Приветствую! Я бот для информирования мужчин о работе по борьбе за мужские права.\nТеперь иногда вы будете получать от меня важные информационные сообщения.")
 			case "help":
-				msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Я поддерживаю следующие комманды:\n/start - Старт бота\n /help - Показать помощь\n Если хотите опубликовать пост или написать администратору сообщение, просто напишите его и, если нужно, прикрепите фото или видео.")
+				msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Я поддерживаю следующие комманды:\n/start - Старт бота\n/help - Показать помощь\n/petition - Получить список петиций, в которых необходимо ваше участие\nЕсли хотите написать администратору сообщение, просто напишите его и, если нужно, прикрепите фото или видео.")
+			case "petition":
+				msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Список петиций где нужно голосовать ЗА:\n \n \nСписок петиций где нужно голосовать ПРОТИВ: \n \n \n")
 			default:
 				var msg_adm tgbotapi.ForwardConfig
 				msg_adm = tgbotapi.NewForward(int64(admin_id), update.Message.From.ID, update.Message.MessageID)
 				bot.Send(msg_adm)
-				msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Ваше сообщение отправлено администратору канала.")
+				msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Ваше сообщение отправлено администратору.")
 			}
 
 			bot.Send(msg)
