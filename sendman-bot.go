@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"gopkg.in/yaml.v2"
 )
 
@@ -18,6 +20,7 @@ func failOnError(err error, msg string) { //Делаем более читаем
 }
 
 var pool *pgxpool.Pool
+var rconn *amqp.Connection
 
 func createUser(tid int64, uname string) error {
 
@@ -51,6 +54,10 @@ func main() {
 		POSTGRES_SSL            string `yaml:"postgres_ssl"`
 		POSTGRES_POOL_MAX_CONNS int    `yaml:"postgres_pool_max_conns"`
 		ADMIN_ID                int    `yaml:"admin_id"`
+		RABBIT_HOST             string `yaml:"rabbit_host"`
+		RABBIT_PORT             int    `yaml:"rabbit_port"`
+		RABBIT_USER             string `yaml:"rabbit_user"`
+		RABBIT_PASS             string `yaml:"rabbit_pass"`
 	}
 	var AppConfig *Cfg
 	f, err := os.Open(configPath)
@@ -70,17 +77,37 @@ func main() {
 	postgres_ssl := AppConfig.POSTGRES_SSL
 	postgres_pool_max_conns := AppConfig.POSTGRES_POOL_MAX_CONNS
 	admin_id := AppConfig.ADMIN_ID
-
+	rabbit_host := AppConfig.RABBIT_HOST
+	rabbit_port := AppConfig.RABBIT_PORT
+	rabbit_user := AppConfig.RABBIT_USER
+	rabbit_pass := AppConfig.RABBIT_PASS
 	//Инициализация БД
 	dbURL := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s&pool_max_conns=%d",
 		postgres_user, postgres_pass, postgres_host, postgres_port, postgres_db, postgres_ssl, postgres_pool_max_conns)
 
 	pool, err = pgxpool.New(context.Background(), dbURL)
 	failOnError(err, "Unable to connection to database: %v.\n")
-
 	defer pool.Close()
-
 	log.Print("Connected to database!\n")
+
+	//Инициализация RabbitMQ
+	rconn, err = amqp.Dial(fmt.Sprintf("amqp://%s:%s@%s:%d/", rabbit_user, rabbit_pass, rabbit_host, rabbit_port))
+	failOnError(err, "Failed to connect to RabbitMQ")
+	defer rconn.Close()
+	rch, err := rconn.Channel()
+	failOnError(err, "Failed to open a channel")
+	defer rch.Close()
+	q, err := rch.QueueDeclare(
+		"sender", // name
+		false,    // durable
+		false,    // delete when unused
+		false,    // exclusive
+		false,    // no-wait
+		nil,      // arguments
+	)
+	failOnError(err, "Failed to declare a queue")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
 	//Создаём бота
 	bot, err := tgbotapi.NewBotAPI(bot_token)
