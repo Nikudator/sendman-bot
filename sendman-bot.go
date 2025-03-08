@@ -23,6 +23,9 @@ func createUser(tid int64, uname string) error {
 
 	queryCheck := "SELECT COUNT(*) FROM botusers WHERE tid = $1"
 	var count int
+
+	//log.Printf("Query: %s, TID: %d, NAME: %s.\n", queryCheck, tid, uname)
+
 	err := pool.QueryRow(context.Background(), queryCheck, tid).Scan(&count)
 	failOnError(err, "Can't check user.\n")
 	if count < 1 {
@@ -72,7 +75,7 @@ func main() {
 	dbURL := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s&pool_max_conns=%d",
 		postgres_user, postgres_pass, postgres_host, postgres_port, postgres_db, postgres_ssl, postgres_pool_max_conns)
 
-	pool, err := pgxpool.New(context.Background(), dbURL)
+	pool, err = pgxpool.New(context.Background(), dbURL)
 	failOnError(err, "Unable to connection to database: %v.\n")
 
 	defer pool.Close()
