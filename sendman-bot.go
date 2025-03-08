@@ -17,6 +17,26 @@ func failOnError(err error, msg string) { //Делаем более читаем
 	}
 }
 
+var pool *pgxpool.Pool
+
+func createUser(tid int64, uname string) error {
+
+	queryCheck := `SELECT COUNT(*) FROM botusers WHERE tid = $1`
+	var count int
+	err := pool.QueryRow(context.Background(), queryCheck, tid).Scan(&count)
+	failOnError(err, "Can't check user.\n")
+	if count < 1 {
+		queryCreate := `INSERT INTO botusers (tid, uname)
+        	VALUES ($1, $2)
+        	RETURNING id`
+		var id int
+		err := pool.QueryRow(context.Background(), queryCreate, tid, uname).Scan(&id)
+		failOnError(err, "Can't create user.\n")
+		log.Printf("Created user with ID: %d, TID: %d, NAME: %s.\n", id, tid, uname)
+	}
+
+}
+
 func main() {
 	//Читаем конфиг
 	const configPath = "config.yml"
@@ -66,7 +86,7 @@ func main() {
 
 	bot.Debug = true
 
-	log.Printf("Бот подключился %s\n", bot.Self.UserName)
+	log.Printf("Bot is connected %s\n", bot.Self.UserName)
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
@@ -77,10 +97,12 @@ func main() {
 		if update.Message != nil {
 			log.Printf("[%s] %s\n", update.Message.From.UserName, update.Message.Text)
 
-			var msg tgbotapi.MessageConfig
+			createUser(update.Message.Chat.ID, update.Message.From.UserName)
 
+			var msg tgbotapi.MessageConfig
 			switch update.Message.Command() {
 			case "start":
+
 				msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Приветствую! Я бот для информирования мужчин о работе по борьбе за мужские права.\nТеперь иногда вы будете получать от меня важные информационные сообщения.")
 			case "help":
 				msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Я поддерживаю следующие комманды:\n/start - Старт бота\n/help - Показать помощь\n/petition - Получить список петиций, в которых необходимо ваше участие\nЕсли хотите написать администратору сообщение, просто напишите его и, если нужно, прикрепите фото или видео.")
