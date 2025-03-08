@@ -66,7 +66,7 @@ func main() {
 
 	bot.Debug = true
 
-	log.Printf("Бот подключился %s", bot.Self.UserName)
+	log.Printf("Бот подключился %s\n", bot.Self.UserName)
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
