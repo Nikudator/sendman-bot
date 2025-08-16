@@ -70,20 +70,6 @@ func main() {
 	rconn, err = amqp.Dial(fmt.Sprintf("amqp://%s:%s@%s:%d/", rabbit_user, rabbit_pass, rabbit_host, rabbit_port))
 	failOnError(err, "Failed to connect to RabbitMQ\n")
 	defer rconn.Close()
-	rch, err := rconn.Channel()
-	failOnError(err, "Failed to open a channel\n")
-	defer rch.Close()
-	q, err := rch.QueueDeclare(
-		"sender", // name
-		false,    // durable
-		false,    // delete when unused
-		false,    // exclusive
-		false,    // no-wait
-		nil,      // arguments
-	)
-	failOnError(err, "Failed to declare a queue\n")
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
 
 	//Создаём бота
 	bot, err = tgbotapi.NewBotAPI(bot_token)
@@ -117,7 +103,14 @@ func main() {
 
 				if getUserRole(update.Message.Chat.ID) > 0 { //Если сообщение пришло от админа, то запускаем рассылку.
 
+					type Message struct {
+						ID   string `json:"id"`
+						Text string `json:"text"`
+					}
+					u := Message{ID: "some-id", Text: "admin"}
+
 				} else { //Если сообщение пришло от не админа, пересылаем его админу.
+
 					var msg_adm tgbotapi.ForwardConfig
 					msg_adm = tgbotapi.NewForward(int64(admin_id), update.Message.From.ID, update.Message.MessageID)
 					bot.Send(msg_adm)
@@ -161,4 +154,34 @@ func getUserRole(tid int64) int {
 	err := pool.QueryRow(context.Background(), queryCheck, tid).Scan(&uadmin)
 	failOnError(err, "Can't get user role \n")
 	return uadmin
+}
+
+func sendMessageToQueue(body byte) error {
+	rch, err := rconn.Channel()
+	failOnError(err, "Failed to open a channel\n")
+	defer rch.Close()
+	q, err := rch.QueueDeclare(
+		"sender", // name
+		false,    // durable
+		false,    // delete when unused
+		false,    // exclusive
+		false,    // no-wait
+		nil,      // arguments
+	)
+	failOnError(err, "Failed to declare a queue\n")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err = rch.PublishWithContext(ctx,
+		"",     // exchange
+		q.Name, // routing key
+		false,  // mandatory
+		false,  // immediate
+		amqp.Publishing{
+			ContentType: "text/plain",
+			Body:        body,
+		})
+	failOnError(err, "Failed to publish a message")
+
+	return err
 }
