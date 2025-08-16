@@ -42,6 +42,10 @@ func createUser(tid int64, uname string) error {
 	return err
 }
 
+func getUserRole(tid int64) error {
+
+}
+
 func main() {
 	//Читаем конфиг
 	const configPath = "config.yml"
