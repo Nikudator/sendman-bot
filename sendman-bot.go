@@ -13,48 +13,9 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func failOnError(err error, msg string) { //Делаем более читаемую и компактную обработку ошибок.
-	if err != nil {
-		log.Panicf("%s: %s", msg, err)
-	}
-}
-
 var pool *pgxpool.Pool
 var rconn *amqp.Connection
 var bot *tgbotapi.BotAPI
-
-func createUser(tid int64, uname string) error {
-
-	queryCheck := "SELECT COUNT(*) FROM botusers WHERE tid = $1"
-	var count int
-	err := pool.QueryRow(context.Background(), queryCheck, tid).Scan(&count)
-	failOnError(err, "Can't check user for adding user.\n")
-	if count < 1 {
-		queryCreate := "INSERT INTO botusers (tid, uname) VALUES ($1, $2) RETURNING id"
-		var id int
-		err := pool.QueryRow(context.Background(), queryCreate, tid, uname).Scan(&id)
-		failOnError(err, "Can't create user.\n")
-		log.Printf("Created user with ID: %d, TID: %d, NAME: %s.\n", id, tid, uname)
-	}
-	return err
-}
-
-func getUserRole(tid int64) error {
-
-	queryCheck := "SELECT uadmin FROM botusers WHERE tid = $1"
-	var count int
-	rows, err := pool.QueryRow(context.Background(), queryCheck, tid).Scan(&count)
-	failOnError(err, "Can't get user role for ID: %d \n", id)
-	uadmin := 0
-	for rows.Next() {
-		var name string
-		if err := rows.Scan(&uadmin); err != nil {
-			failOnError(err, "Can't scan row when getting role for ID: %d \n", id)
-		}
-	}
-
-	return uadmin
-}
 
 func main() {
 	//Читаем конфиг
@@ -153,15 +114,51 @@ func main() {
 			case "petition":
 				msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Список петиций где нужно голосовать ЗА:\n \n \nСписок петиций где нужно голосовать ПРОТИВ: \n \n \n")
 			default:
-				var msg_adm tgbotapi.ForwardConfig
-				msg_adm = tgbotapi.NewForward(int64(admin_id), update.Message.From.ID, update.Message.MessageID)
-				bot.Send(msg_adm)
-				msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Ваше сообщение отправлено администратору.")
+
+				if getUserRole(update.Message.Chat.ID) > 0 { //Если сообщение пришло от админа, то запускаем рассылку.
+
+				} else { //Если сообщение пришло от не админа, пересылаем его админу.
+					var msg_adm tgbotapi.ForwardConfig
+					msg_adm = tgbotapi.NewForward(int64(admin_id), update.Message.From.ID, update.Message.MessageID)
+					bot.Send(msg_adm)
+					msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Ваше сообщение отправлено администратору.")
+				}
 			}
 
 			bot.Send(msg)
 		} else {
-
+			//Если входящих нет, начинаем рассылку из очереди.
 		}
 	}
+}
+
+func failOnError(err error, msg string) { //Делаем более читаемую и компактную обработку ошибок.
+	if err != nil {
+		log.Panicf("%s: %s", msg, err)
+	}
+}
+
+func createUser(tid int64, uname string) error {
+
+	queryCheck := "SELECT COUNT(*) FROM botusers WHERE tid = $1"
+	var count int
+	err := pool.QueryRow(context.Background(), queryCheck, tid).Scan(&count)
+	failOnError(err, "Can't check user for adding user.\n")
+	if count < 1 {
+		queryCreate := "INSERT INTO botusers (tid, uname) VALUES ($1, $2) RETURNING id"
+		var id int
+		err := pool.QueryRow(context.Background(), queryCreate, tid, uname).Scan(&id)
+		failOnError(err, "Can't create user.\n")
+		log.Printf("Created user with ID: %d, TID: %d, NAME: %s.\n", id, tid, uname)
+	}
+	return err
+}
+
+func getUserRole(tid int64) int {
+
+	queryCheck := "SELECT uadmin FROM botusers WHERE tid = $1"
+	var uadmin int
+	err := pool.QueryRow(context.Background(), queryCheck, tid).Scan(&uadmin)
+	failOnError(err, "Can't get user role \n")
+	return uadmin
 }
