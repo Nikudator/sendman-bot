@@ -27,11 +27,8 @@ func createUser(tid int64, uname string) error {
 
 	queryCheck := "SELECT COUNT(*) FROM botusers WHERE tid = $1"
 	var count int
-
-	//log.Printf("Query: %s, TID: %d, NAME: %s.\n", queryCheck, tid, uname)
-
 	err := pool.QueryRow(context.Background(), queryCheck, tid).Scan(&count)
-	failOnError(err, "Can't check user.\n")
+	failOnError(err, "Can't check user for adding user.\n")
 	if count < 1 {
 		queryCreate := "INSERT INTO botusers (tid, uname) VALUES ($1, $2) RETURNING id"
 		var id int
@@ -44,6 +41,19 @@ func createUser(tid int64, uname string) error {
 
 func getUserRole(tid int64) error {
 
+	queryCheck := "SELECT uadmin FROM botusers WHERE tid = $1"
+	var count int
+	rows, err := pool.QueryRow(context.Background(), queryCheck, tid).Scan(&count)
+	failOnError(err, "Can't get user role for ID: %d \n", id)
+	uadmin := 0
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&uadmin); err != nil {
+			failOnError(err, "Can't scan row when getting role for ID: %d \n", id)
+		}
+	}
+
+	return uadmin
 }
 
 func main() {
@@ -128,7 +138,7 @@ func main() {
 	updates := bot.GetUpdatesChan(u)
 
 	for update := range updates {
-		if update.Message != nil {
+		if update.Message != nil { //Если есть входящие, обрабатываем.
 			log.Printf("[%s] %s\n", update.Message.From.UserName, update.Message.Text)
 
 			//createUser не вынесена в "start", потому что в случае краша базы, пользователи повторно будут добавляться в новую.
@@ -150,6 +160,8 @@ func main() {
 			}
 
 			bot.Send(msg)
+		} else {
+
 		}
 	}
 }
