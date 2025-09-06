@@ -122,6 +122,8 @@ func main() {
 			bot.Send(msg)
 		} else {
 			//Если входящих нет, начинаем рассылку из очереди.
+			sendMessageToUser()
+			failOnError(err, "Can't send messages tu users.\n")
 		}
 	}
 }
