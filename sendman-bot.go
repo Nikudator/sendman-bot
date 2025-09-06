@@ -86,7 +86,7 @@ func main() {
 	log.Printf("Bot is connected %s\n", bot.Self.UserName)
 
 	u := tgbotapi.NewUpdate(0)
-	u.Timeout = 10
+	u.Timeout = 60
 
 	updates := bot.GetUpdatesChan(u)
 
