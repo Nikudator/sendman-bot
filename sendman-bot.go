@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -16,6 +17,11 @@ import (
 var pool *pgxpool.Pool
 var rconn *amqp.Connection
 var bot *tgbotapi.BotAPI
+
+type Mess2queue struct { //структура для отправки сообщений в очередь
+	ID   int64  `json:"id"`
+	Text string `json:"name"`
+}
 
 func main() {
 	//Читаем конфиг
@@ -101,16 +107,11 @@ func main() {
 				msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Список петиций где нужно голосовать ЗА:\n \n \nСписок петиций где нужно голосовать ПРОТИВ: \n \n \n")
 			default:
 
-				if getUserRole(update.Message.Chat.ID) > 0 { //Если сообщение пришло от админа, то запускаем рассылку.
-
-					type Message struct {
-						ID   string `json:"id"`
-						Text string `json:"text"`
-					}
-					u := Message{ID: "some-id", Text: "admin"}
-
+				if getUserRole(update.Message.Chat.ID) > 0 { //Если сообщение пришло от админа, то генерируем сообщения брокеру.
+					Message2queue := Mess2queue{ID: 1, Text: update.Message.Text}
+					err = sendMessageToQueue(Message2queue)
+					failOnError(err, "Cann't send message to queue\n")
 				} else { //Если сообщение пришло от не админа, пересылаем его админу.
-
 					var msg_adm tgbotapi.ForwardConfig
 					msg_adm = tgbotapi.NewForward(int64(admin_id), update.Message.From.ID, update.Message.MessageID)
 					bot.Send(msg_adm)
@@ -132,10 +133,9 @@ func failOnError(err error, msg string) { //Делаем более читаем
 }
 
 func createUser(tid int64, uname string) error {
-
-	queryCheck := "SELECT COUNT(*) FROM botusers WHERE tid = $1"
+	queryCount := "SELECT COUNT(*) FROM botusers WHERE tid = $1"
 	var count int
-	err := pool.QueryRow(context.Background(), queryCheck, tid).Scan(&count)
+	err := pool.QueryRow(context.Background(), queryCount, tid).Scan(&count)
 	failOnError(err, "Can't check user for adding user.\n")
 	if count < 1 {
 		queryCreate := "INSERT INTO botusers (tid, uname) VALUES ($1, $2) RETURNING id"
@@ -147,8 +147,7 @@ func createUser(tid int64, uname string) error {
 	return err
 }
 
-func getUserRole(tid int64) int {
-
+func getUserRole(tid int64) int { //проверяем, является ли пользователь админом.
 	queryCheck := "SELECT uadmin FROM botusers WHERE tid = $1"
 	var uadmin int
 	err := pool.QueryRow(context.Background(), queryCheck, tid).Scan(&uadmin)
@@ -156,7 +155,7 @@ func getUserRole(tid int64) int {
 	return uadmin
 }
 
-func sendMessageToQueue(body byte) error {
+func sendMessageToQueue(body Mess2queue) error {
 	rch, err := rconn.Channel()
 	failOnError(err, "Failed to open a channel\n")
 	defer rch.Close()
@@ -169,19 +168,30 @@ func sendMessageToQueue(body byte) error {
 		nil,      // arguments
 	)
 	failOnError(err, "Failed to declare a queue\n")
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
 
-	err = rch.PublishWithContext(ctx,
-		"",     // exchange
-		q.Name, // routing key
-		false,  // mandatory
-		false,  // immediate
-		amqp.Publishing{
-			ContentType: "text/plain",
-			Body:        body,
-		})
-	failOnError(err, "Failed to publish a message")
-
+	queryTid := "SELECT tid FROM botusers"
+	rows, err := pool.Query(context.Background(), queryTid)
+	failOnError(err, "Can't check user for adding user.\n")
+	defer rows.Close()
+	for rows.Next() {
+		var tid int64
+		err := rows.Scan(&tid)
+		failOnError(err, "Error read row for tid.\n")
+		body.ID = tid
+		boddy, err := json.Marshal(body)
+		failOnError(err, "Cannot convert message to JSON\n")
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		err = rch.PublishWithContext(ctx,
+			"",     // exchange
+			q.Name, // routing key
+			false,  // mandatory
+			false,  // immediate
+			amqp.Publishing{
+				ContentType: "text/plain",
+				Body:        []byte(boddy),
+			})
+		failOnError(err, "Failed to publish a message to queue\n")
+	}
 	return err
 }
