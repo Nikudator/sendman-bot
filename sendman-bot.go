@@ -98,7 +98,7 @@ func main() {
 			var msg tgbotapi.MessageConfig
 			switch update.Message.Command() {
 			case "start":
-				msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Приветствую! Я бот для информирования мужчин о работе по борьбе за мужские права.\nТеперь иногда вы будете получать от меня важные информационные сообщения.")
+				msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Приветствую! Я бот для информирования.\nТеперь иногда вы будете получать от меня важные информационные сообщения.")
 			case "help":
 				msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Я поддерживаю следующие комманды:\n/start - Старт бота\n/help - Показать помощь\n/petition - Получить список петиций.\nЕсли хотите написать администратору сообщение, просто напишите его и, если нужно, прикрепите фото или видео.")
 			case "petition":
