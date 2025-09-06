@@ -86,12 +86,12 @@ func main() {
 	log.Printf("Bot is connected %s\n", bot.Self.UserName)
 
 	u := tgbotapi.NewUpdate(0)
-	u.Timeout = 60
+	u.Timeout = 10
 
 	updates := bot.GetUpdatesChan(u)
 
 	for update := range updates {
-		if update.Message != nil { //Если есть входящие, обрабатываем.
+		if update.Message != nil {
 			log.Printf("[%s] %s\n", update.Message.From.UserName, string(update.Message.Text))
 
 			//createUser не вынесена в "start", потому что в случае краша базы, пользователи повторно будут добавляться в новую.
@@ -122,7 +122,7 @@ func main() {
 		}
 		//Если входящих нет, начинаем рассылку из очереди.
 		sendMessageToUser(5)
-		failOnError(err, "Can't send messages tu users.\n")
+		failOnError(err, "Can't send messages to users.\n")
 	}
 }
 
