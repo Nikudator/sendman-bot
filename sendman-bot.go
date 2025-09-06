@@ -118,13 +118,11 @@ func main() {
 					msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Ваше сообщение отправлено администратору.")
 				}
 			}
-
 			bot.Send(msg)
-		} else {
-			//Если входящих нет, начинаем рассылку из очереди.
-			sendMessageToUser(5)
-			failOnError(err, "Can't send messages tu users.\n")
 		}
+		//Если входящих нет, начинаем рассылку из очереди.
+		sendMessageToUser(5)
+		failOnError(err, "Can't send messages tu users.\n")
 	}
 }
 
