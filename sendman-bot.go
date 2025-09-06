@@ -18,7 +18,7 @@ var pool *pgxpool.Pool
 var rconn *amqp.Connection
 var bot *tgbotapi.BotAPI
 
-type Mess2queue struct { //структура для отправки сообщений в очередь
+type Mess struct { //структура для отправки сообщений в очередь
 	ID   int64  `json:"id"`
 	Text string `json:"name"`
 }
@@ -92,7 +92,7 @@ func main() {
 
 	for update := range updates {
 		if update.Message != nil { //Если есть входящие, обрабатываем.
-			log.Printf("[%s] %s\n", update.Message.From.UserName, update.Message.Text)
+			log.Printf("[%s] %s\n", update.Message.From.UserName, string(update.Message.Text))
 
 			//createUser не вынесена в "start", потому что в случае краша базы, пользователи повторно будут добавляться в новую.
 			createUser(update.Message.Chat.ID, update.Message.From.UserName)
@@ -108,7 +108,7 @@ func main() {
 			default:
 
 				if getUserRole(update.Message.Chat.ID) > 0 { //Если сообщение пришло от админа, то генерируем сообщения брокеру.
-					Message2queue := Mess2queue{ID: 1, Text: update.Message.Text}
+					Message2queue := Mess{ID: 1, Text: update.Message.Text}
 					err = sendMessageToQueue(Message2queue)
 					failOnError(err, "Cann't send message to queue\n")
 				} else { //Если сообщение пришло от не админа, пересылаем его админу.
@@ -152,10 +152,13 @@ func getUserRole(tid int64) int { //проверяем, является ли п
 	var uadmin bool
 	err := pool.QueryRow(context.Background(), queryCheck, tid).Scan(&uadmin)
 	failOnError(err, "Can't get user role \n")
-	return uadmin
+	if uadmin {
+		return 1
+	}
+	return 0
 }
 
-func sendMessageToQueue(body Mess2queue) error {
+func sendMessageToQueue(body Mess) error {
 	rch, err := rconn.Channel()
 	failOnError(err, "Failed to open a channel\n")
 	defer rch.Close()
@@ -194,4 +197,58 @@ func sendMessageToQueue(body Mess2queue) error {
 		failOnError(err, "Failed to publish a message to queue\n")
 	}
 	return err
+}
+
+func sendMessageToUser() error {
+	rch, err := rconn.Channel()
+	failOnError(err, "Failed to open a channel\n")
+	defer rch.Close()
+	q, err := rch.QueueDeclare(
+		"sender", // name
+		false,    // durable
+		false,    // delete when unused
+		false,    // exclusive
+		false,    // no-wait
+		nil,      // arguments
+	)
+	failOnError(err, "Failed to declare a queue\n")
+
+	err = rch.ExchangeDeclare(
+		"message", // name
+		"fanout",  // type
+		true,      // durable
+		false,     // auto-deleted
+		false,     // internal
+		false,     // no-wait
+		nil,       // arguments
+	)
+	failOnError(err, "Failed to declare an exchange")
+
+	err = rch.QueueBind(
+		q.Name,    // queue name
+		"",        // routing key
+		"message", // exchange
+		false,
+		nil,
+	)
+	failOnError(err, "Failed to bind a queue")
+
+	msgs, err := rch.Consume(
+		q.Name,        // queue
+		"sendman-bot", // consumer
+		true,          // auto-ack
+		false,         // exclusive
+		false,         // no-local
+		false,         // no-wait
+		nil,           // args
+	)
+	failOnError(err, "Failed to register a consumer")
+	var Message2queue Mess
+	for d := range msgs {
+
+		err := json.Unmarshal(d.Body, &Message2queue)
+		failOnError(err, "Failed to convert message from JSON")
+		msg = tgbotapi.NewMessage(Message2queue.ID, Message2queue.Text)
+		log.Printf(" [x] %s", d.Body)
+	}
 }
