@@ -149,7 +149,7 @@ func createUser(tid int64, uname string) error {
 
 func getUserRole(tid int64) int { //проверяем, является ли пользователь админом.
 	queryCheck := "SELECT uadmin FROM botusers WHERE tid = $1"
-	var uadmin int
+	var uadmin bool
 	err := pool.QueryRow(context.Background(), queryCheck, tid).Scan(&uadmin)
 	failOnError(err, "Can't get user role \n")
 	return uadmin
