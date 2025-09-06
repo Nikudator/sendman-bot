@@ -248,7 +248,8 @@ func sendMessageToUser() error {
 
 		err := json.Unmarshal(d.Body, &Message2queue)
 		failOnError(err, "Failed to convert message from JSON")
-		msg = tgbotapi.NewMessage(Message2queue.ID, Message2queue.Text)
+		msg := tgbotapi.NewMessage(Message2queue.ID, Message2queue.Text)
+		bot.Send(msg)
 		log.Printf(" [x] %s", d.Body)
 	}
 }
