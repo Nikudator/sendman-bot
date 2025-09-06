@@ -118,7 +118,7 @@ func main() {
 			bot.Send(msg)
 		}
 		//Если входящих нет, начинаем рассылку из очереди.
-		sendMessageToUser(5)
+		sendMessageToUser(20)
 		failOnError(err, "Can't send messages to users.\n")
 	}
 }
@@ -241,13 +241,18 @@ func sendMessageToUser(pause int) error {
 	)
 	failOnError(err, "Failed to register a consumer")
 	var Message2queue Mess
+	var count int
 	for d := range msgs {
+		count++
 		err := json.Unmarshal(d.Body, &Message2queue)
 		failOnError(err, "Failed to convert message from JSON")
 		msg := tgbotapi.NewMessage(Message2queue.ID, Message2queue.Text)
 		bot.Send(msg)
 		log.Printf(" [x] %s", d.Body)
 		time.Sleep(time.Duration(1000/pause) * time.Microsecond)
+		if count > pause {
+			break
+		}
 	}
 	return err
 }
