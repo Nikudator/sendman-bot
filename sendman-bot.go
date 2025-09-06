@@ -93,10 +93,8 @@ func main() {
 	for update := range updates {
 		if update.Message != nil {
 			log.Printf("[%s] %s\n", update.Message.From.UserName, string(update.Message.Text))
-
 			//createUser не вынесена в "start", потому что в случае краша базы, пользователи повторно будут добавляться в новую.
 			createUser(update.Message.Chat.ID, update.Message.From.UserName)
-
 			var msg tgbotapi.MessageConfig
 			switch update.Message.Command() {
 			case "start":
@@ -106,7 +104,6 @@ func main() {
 			case "petition":
 				msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Список петиций где нужно голосовать ЗА:\n \n \nСписок петиций где нужно голосовать ПРОТИВ: \n \n \n")
 			default:
-
 				if getUserRole(update.Message.Chat.ID) > 0 { //Если сообщение пришло от админа, то генерируем сообщения брокеру.
 					Message2queue := Mess{ID: 1, Text: update.Message.Text}
 					err = sendMessageToQueue(Message2queue)
