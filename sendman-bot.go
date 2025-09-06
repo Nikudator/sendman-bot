@@ -122,7 +122,7 @@ func main() {
 			bot.Send(msg)
 		} else {
 			//Если входящих нет, начинаем рассылку из очереди.
-			sendMessageToUser()
+			sendMessageToUser(5)
 			failOnError(err, "Can't send messages tu users.\n")
 		}
 	}
@@ -201,7 +201,7 @@ func sendMessageToQueue(body Mess) error {
 	return err
 }
 
-func sendMessageToUser() error {
+func sendMessageToUser(pause int) error {
 	rch, err := rconn.Channel()
 	failOnError(err, "Failed to open a channel\n")
 	defer rch.Close()
@@ -252,6 +252,7 @@ func sendMessageToUser() error {
 		msg := tgbotapi.NewMessage(Message2queue.ID, Message2queue.Text)
 		bot.Send(msg)
 		log.Printf(" [x] %s", d.Body)
+		time.Sleep(time.Duration(1000/pause) * time.Microsecond)
 	}
 	return err
 }
