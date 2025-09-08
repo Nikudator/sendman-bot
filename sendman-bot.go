@@ -58,7 +58,6 @@ func main() {
 	postgres_pass := AppConfig.POSTGRES_PASS
 	postgres_ssl := AppConfig.POSTGRES_SSL
 	postgres_pool_max_conns := AppConfig.POSTGRES_POOL_MAX_CONNS
-	admin_id := AppConfig.ADMIN_ID
 	rabbit_host := AppConfig.RABBIT_HOST
 	rabbit_port := AppConfig.RABBIT_PORT
 	rabbit_user := AppConfig.RABBIT_USER
@@ -109,16 +108,25 @@ func main() {
 					err = sendMessageToQueue(Message2queue)
 					failOnError(err, "Cann't send message to queue\n")
 				} else { //Если сообщение пришло от не админа, пересылаем его админу.
-					//var msg_adm tgbotapi.ForwardConfig
-					msg_adm := tgbotapi.NewForward(int64(admin_id), update.Message.From.ID, update.Message.MessageID)
-					bot.Send(msg_adm)
-					msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Ваше сообщение отправлено администратору.")
+
+					queryTid := "SELECT tid FROM botusers WHERE uadmin = TRUE"
+					rows, err := pool.Query(context.Background(), queryTid)
+					failOnError(err, "Can't check user for adding user.\n")
+					defer rows.Close()
+					for rows.Next() {
+						var tid int64
+						err := rows.Scan(&tid)
+						failOnError(err, "Error read row for tid.\n")
+						msg_adm := tgbotapi.NewForward(tid, update.Message.From.ID, update.Message.MessageID)
+						bot.Send(msg_adm)
+					}
+					msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Ваше сообщение отправлено администраторам.")
 				}
 			}
 			bot.Send(msg)
 		}
 		//Если входящих нет, начинаем рассылку из очереди.
-		sendMessageToUser(20)
+		sendMessageToUser(25)
 		failOnError(err, "Can't send messages to users.\n")
 	}
 }
@@ -229,19 +237,13 @@ func sendMessageToUser(pause int) error {
 		nil,
 	)
 	failOnError(err, "Failed to bind a queue\n")
-
-	// msgs, err := rch.Consume(
-	// 	q.Name,        // queue
-	// 	"sendman-bot", // consumer
-	// 	true,          // auto-ack
-	// 	false,         // exclusive
-	// 	false,         // no-local
-	// 	false,         // no-wait
-	// 	nil,           // args
-	// )
-	// failOnError(err, "Failed to register a consumer\n")
 	var Message2user Mess
-	for сount := 0; сount < pause; сount++ {
+	сount := 0
+	for {
+		if сount > pause {
+			log.Println("End of limit for sending.")
+			break
+		}
 		msgs, ok, err := rch.Get(q.Name, false)
 		failOnError(err, "Failed to getting message from queue\n")
 		if !ok {
@@ -256,7 +258,7 @@ func sendMessageToUser(pause int) error {
 		err = msgs.Ack(false)
 		failOnError(err, "Failed to ack message to queue\n")
 		time.Sleep(time.Duration(1000/pause) * time.Microsecond)
-
+		сount++
 	}
 	return err
 }
