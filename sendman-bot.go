@@ -241,10 +241,6 @@ func sendMessageToUser(pause int) error {
 	// )
 	// failOnError(err, "Failed to register a consumer\n")
 	var Message2user Mess
-
-	log.Printf("pause = %d\n", pause)
-	log.Print("Enter to cycle\n")
-
 	for сount := 0; сount < pause; сount++ {
 		msgs, ok, err := rch.Get(q.Name, false)
 		failOnError(err, "Failed to getting message from queue\n")
@@ -256,7 +252,7 @@ func sendMessageToUser(pause int) error {
 		failOnError(err, "Failed to convert message from JSON\n")
 		msg := tgbotapi.NewMessage(Message2user.ID, Message2user.Text)
 		bot.Send(msg)
-		log.Printf(" [x] %s [x]  %s /n", Message2user.ID, string(Message2user.Text))
+		log.Printf(" [x] %v [x]  %v \n", Message2user.ID, string(Message2user.Text))
 		err = msgs.Ack(false)
 		failOnError(err, "Failed to ack message to queue\n")
 		time.Sleep(time.Duration(1000/pause) * time.Microsecond)
