@@ -242,14 +242,14 @@ func sendMessageToUser(pause int) error {
 	for {
 		if сount > pause {
 			log.Println("End of limit for sending.")
-			break
+			return err
 		}
 		msgs, ok, err := rch.Get(q.Name, false)
 		failOnError(err, "Failed to getting message from queue\n")
-		if !ok {
-			log.Println("No messages in the queue.")
-			break
-		}
+		//if !ok {
+		//	log.Println("No messages in the queue.")
+		//	break
+		//}
 		err = json.Unmarshal(msgs.Body, &Message2user)
 		failOnError(err, "Failed to convert message from JSON\n")
 		msg := tgbotapi.NewMessage(Message2user.ID, Message2user.Text)
