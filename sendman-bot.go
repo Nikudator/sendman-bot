@@ -240,23 +240,31 @@ func sendMessageToUser(pause int) error {
 	var Message2user Mess
 	сount := 0
 	for {
-		if сount > pause {
-			log.Println("End of limit for sending.")
-			return err
-		}
+		//if сount > pause {
+		//	log.Println("End of limit for sending.")
+		//	return err
+		//}
 		msgs, ok, err := rch.Get(q.Name, false)
 		failOnError(err, "Failed to getting message from queue\n")
-		//if !ok {
-		//	log.Println("No messages in the queue.")
-		//	break
-		//}
+		if !ok {
+			log.Println("No messages in the queue.")
+			break
+		}
 		err = json.Unmarshal(msgs.Body, &Message2user)
+		if err != nil {
+			msgs.Nack(false, true) // Возвращаем сообщение в очередь при ошибке
+			break
+		}
 		failOnError(err, "Failed to convert message from JSON\n")
 		msg := tgbotapi.NewMessage(Message2user.ID, Message2user.Text)
 		bot.Send(msg)
 		log.Printf(" [x] %v [x]  %v \n", Message2user.ID, string(Message2user.Text))
 		err = msgs.Ack(false)
 		failOnError(err, "Failed to ack message to queue\n")
+		if err != nil {
+			msgs.Nack(false, true) // Возвращаем сообщение в очередь при ошибке
+			break
+		}
 		time.Sleep(time.Duration(1000/pause) * time.Microsecond)
 		сount++
 	}
