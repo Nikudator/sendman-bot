@@ -63,8 +63,8 @@ func main() {
 	rabbit_user := AppConfig.RABBIT_USER
 	rabbit_pass := AppConfig.RABBIT_PASS
 	//Инициализация БД
-	dbURL := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s&pool_max_conns=%d",
-		postgres_user, postgres_pass, postgres_host, postgres_port, postgres_db, postgres_ssl, postgres_pool_max_conns)
+
+	dbURL := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s&pool_max_conns=%d", postgres_user, postgres_pass, postgres_host, postgres_port, postgres_db, postgres_ssl, postgres_pool_max_conns)
 
 	pool, err = pgxpool.New(context.Background(), dbURL)
 	failOnError(err, "Unable to connection to database: %v.\n")
