@@ -17,3 +17,19 @@ CREATE INDEX rdate ON "botusers" (rdate);
 CREATE INDEX sender ON "botusers" (sender);
 CREATE INDEX reciver ON "botusers" (reciver);
 CREATE INDEX uadmin ON "botusers" (uadmin);
+
+CREATE TABLE "petitons" (
+    id       serial PRIMARY KEY,
+    link    varchar(6) NOT NULL DEFAULT '', -- 6 character for link
+    vote   boolean DEFAULT false,    -- for group petition (yes/no)
+    title text  NOT NULL DEFAULT '', -- title for link
+    added_u_id bigint NOT NULL DEFAULT  0, -- who added
+    add_date timestamp DEFAULT CURRENT_TIMESTAMP,   -- add date
+    deleted_u_id bigint NOT NULL DEFAULT 0, --who deleted
+    delete_date timestamp -- delete date
+);
+CREATE UNIQUE INDEX link ON "petitons" (link);
+CREATE INDEX added_u_id ON "petitons" (added_u_id);
+CREATE INDEX add_date ON "petitons" (add_date);
+CREATE INDEX deleted_u_id ON "petitons" (deleted_u_id);
+CREATE INDEX delete_date ON "petitons" (delete_date);
