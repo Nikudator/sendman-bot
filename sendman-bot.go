@@ -30,6 +30,7 @@ func main() {
 		TELEGRAM_BOT_API_TOKEN  string `yaml:"token"`
 		START_MESSAGE           string `yaml:"start_message"`
 		HELP_MESSAGE_USER       string `yaml:"help_message_user"`
+		DONATION_MESSAGE        string `yaml:"donation_message"`
 		POSTGRES_HOST           string `yaml:"postgres_host"`
 		POSTGRES_PORT           int    `yaml:"postgres_port"`
 		POSTGRES_DB             string `yaml:"postgres_db"`
@@ -55,6 +56,7 @@ func main() {
 	bot_token := AppConfig.TELEGRAM_BOT_API_TOKEN
 	start_message := AppConfig.START_MESSAGE
 	help_message_user := AppConfig.HELP_MESSAGE_USER
+	donation_message := AppConfig.DONATION_MESSAGE
 	postgres_host := AppConfig.POSTGRES_HOST
 	postgres_port := AppConfig.POSTGRES_PORT
 	postgres_db := AppConfig.POSTGRES_DB
@@ -107,6 +109,8 @@ func main() {
 			case "petition":
 				msg = tgbotapi.NewMessage(update.Message.Chat.ID, petition())
 				msg.DisableWebPagePreview = true
+			case "donation":
+				msg = tgbotapi.NewMessage(update.Message.Chat.ID, donation_message)
 			default:
 				if getUserRole(update.Message.Chat.ID) > 0 { //Если сообщение пришло от админа, то генерируем сообщения брокеру.
 					Message2queue := Mess{ID: 1, Text: update.Message.Text}
@@ -276,14 +280,14 @@ func sendMessageToUser(pause int) error {
 	return err
 }
 
-func () error {
-	queryCheck := "SELECT * FROM petitions WHERE deleted_u_id > 0"
-	var uadmin bool
-	err := pool.QueryRow(context.Background(), queryCheck, tid).Scan(&uadmin)
-	failOnError(err, "Can't get user role \n")
-	if error {
-		return "При получении списка петиций, что то пошло не так..."
-	}
+func petition() string {
+	//queryCheck := "SELECT * FROM petitions WHERE deleted_u_id > 0"
+	//var uadmin bool
+	//err := pool.QueryRow(context.Background(), queryCheck, tid).Scan(&uadmin)
+	//failOnError(err, "Can't get user role \n")
+	//if error {
+	//	return "При получении списка петиций, что то пошло не так..."
+	//}
 	return "Голосовать \"ЗА\" ✅:\n✅Исключить применение ст.131 УК РФ при рассмотрении дел по ст.132 УК РФ, и внести изменения в ст.ст.131-135 УК РФ (https://www.roi.ru/145071/) \n✅ Декриминализация неуплаты алиментов с заменой уголовной ответственности усиленными гражданскими мерами (https://www.roi.ru/145612/) \n✅ Введение симметричных критериев амнистии для граждан обоих полов (https://www.roi.ru/145608/)\n✅ Изменение законодательства для восстановления прав мужчин (https://www.roi.ru/136408/)\n✅ Совместное воспитание ребенка (https://www.roi.ru/126073/)\n✅ Обязательный тест ДНК (https://www.roi.ru/131210/)\n✅ Защита своего имущества в браке (https://www.roi.ru/126913/)\n✅ Реформа семейного законодательства (https://www.roi.ru/136408/)\n✅ Учёт реального вклада при разводе (https://www.roi.ru/135050/)\n✅ Поддержка многодетных отцов (https://www.roi.ru/128085/)\n✅ Центры поддержки для мужчин (https://www.roi.ru/128078/)\n✅ Программа по улучшению мужского здоровья (https://www.roi.ru/129541/)\n✅ Учёт интересов мужчин в демографической политике (https://www.roi.ru/135413/)\n\nГолосовать \"ПРОТИВ\" ❌:\n❌ Закон о домашнем насилии № 2 (https://www.roi.ru/129662/)\n❌ Упрощённое взыскание алиментов № 1 (https://www.roi.ru/134335/)\n❌ Упрощённое взыскание алиментов № 2 (https://www.roi.ru/135500/)\n❌ Налог на бездетность (https://www.roi.ru/123635/)\n❌ Выплата зарплаты женщинам в декрете в течение 3 лет (https://www.roi.ru/125421/)\n❌ Льготы беременным женщинам и матерям (https://www.roi.ru/131438/)\n❌ Льготы неработающим матерям (https://www.roi.ru/130926/)\n❌ Льготы матерям-одиночкам (https://www.roi.ru/128532/)\n❌ Льготы вдовам военнослужащих (https://www.roi.ru/133781/)"
 
 }
