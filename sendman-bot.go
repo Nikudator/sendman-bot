@@ -38,7 +38,7 @@ func main() {
 		POSTGRES_PASS           string `yaml:"postgres_pass"`
 		POSTGRES_SSL            string `yaml:"postgres_ssl"`
 		POSTGRES_POOL_MAX_CONNS int    `yaml:"postgres_pool_max_conns"`
-		ADMIN_ID                int    `yaml:"admin_id"`
+		ADMIN_ID                int64  `yaml:"admin_id"`
 		RABBIT_HOST             string `yaml:"rabbit_host"`
 		RABBIT_PORT             int    `yaml:"rabbit_port"`
 		RABBIT_USER             string `yaml:"rabbit_user"`
@@ -64,6 +64,7 @@ func main() {
 	postgres_pass := AppConfig.POSTGRES_PASS
 	postgres_ssl := AppConfig.POSTGRES_SSL
 	postgres_pool_max_conns := AppConfig.POSTGRES_POOL_MAX_CONNS
+	admin_id := AppConfig.ADMIN_ID
 	rabbit_host := AppConfig.RABBIT_HOST
 	rabbit_port := AppConfig.RABBIT_PORT
 	rabbit_user := AppConfig.RABBIT_USER
@@ -99,7 +100,7 @@ func main() {
 		if update.Message != nil {
 			log.Printf("[%s] %s\n", update.Message.From.UserName, string(update.Message.Text))
 			//createUser не вынесена в "start", потому что в случае краша базы, пользователи повторно будут добавляться в новую.
-			createUser(update.Message.Chat.ID, update.Message.From.UserName)
+			createUser(update.Message.Chat.ID, update.Message.From.UserName, admin_id)
 			var msg tgbotapi.MessageConfig
 			switch update.Message.Command() {
 			case "start":
@@ -146,7 +147,7 @@ func failOnError(err error, msg string) { //Делаем более читаем
 	}
 }
 
-func createUser(tid int64, uname string) error {
+func createUser(tid int64, uname string, admin int64) error {
 	queryCount := "SELECT COUNT(*) FROM botusers WHERE tid = $1"
 	var count int
 	err := pool.QueryRow(context.Background(), queryCount, tid).Scan(&count)
@@ -157,6 +158,8 @@ func createUser(tid int64, uname string) error {
 		err := pool.QueryRow(context.Background(), queryCreate, tid, uname).Scan(&id)
 		failOnError(err, "Can't create user.\n")
 		log.Printf("Created user with ID: %d, TID: %d, NAME: %s.\n", id, tid, uname)
+		msg := tgbotapi.NewMessage(admin, "Ваше сообщение отправлено администраторам.")
+		bot.Send(msg)
 	}
 	return err
 }
@@ -288,6 +291,6 @@ func petition() string {
 	//if error {
 	//	return "При получении списка петиций, что то пошло не так..."
 	//}
-	return "Голосовать \"ЗА\" ✅: \n✅ Ввести обязательную проверку согласия мужа на аборт у замужней женщины (https://www.roi.ru/146488/) \n✅ Исключить применение ст.131 УК РФ при рассмотрении дел по ст.132 УК РФ, и внести изменения в ст.ст.131-135 УК РФ (https://www.roi.ru/145071/) \n✅ Декриминализация неуплаты алиментов с заменой уголовной ответственности усиленными гражданскими мерами (https://www.roi.ru/145612/) \n✅ Введение симметричных критериев амнистии для граждан обоих полов (https://www.roi.ru/145608/)\n✅ Изменение законодательства для восстановления прав мужчин (https://www.roi.ru/136408/)\n✅ Совместное воспитание ребенка (https://www.roi.ru/126073/)\n✅ Обязательный тест ДНК (https://www.roi.ru/131210/)\n✅ Защита своего имущества в браке (https://www.roi.ru/126913/)\n✅ Реформа семейного законодательства (https://www.roi.ru/136408/)\n✅ Учёт реального вклада при разводе (https://www.roi.ru/135050/)\n✅ Поддержка многодетных отцов (https://www.roi.ru/128085/)\n✅ Центры поддержки для мужчин (https://www.roi.ru/128078/)\n✅ Программа по улучшению мужского здоровья (https://www.roi.ru/129541/)\n✅ Учёт интересов мужчин в демографической политике (https://www.roi.ru/135413/)\n\nГолосовать \"ПРОТИВ\" ❌:\n❌ Закон о домашнем насилии № 2 (https://www.roi.ru/129662/)\n❌ Упрощённое взыскание алиментов № 1 (https://www.roi.ru/134335/)\n❌ Упрощённое взыскание алиментов № 2 (https://www.roi.ru/135500/)\n❌ Налог на бездетность (https://www.roi.ru/123635/)\n❌ Выплата зарплаты женщинам в декрете в течение 3 лет (https://www.roi.ru/125421/)\n❌ Льготы беременным женщинам и матерям (https://www.roi.ru/131438/)\n❌ Льготы неработающим матерям (https://www.roi.ru/130926/)\n❌ Льготы матерям-одиночкам (https://www.roi.ru/128532/)\n❌ Льготы вдовам военнослужащих (https://www.roi.ru/133781/)"
+	return "Голосовать \"ЗА\" ✅: \n✅ Закрепить приоритет сохранения роли отца в воспитании детей как меры демографической и семейной политики Российская общественная инициатива (https://www.roi.ru/147175/) \n✅ Ввести обязательную проверку согласия мужа на аборт у замужней женщины (https://www.roi.ru/146488/) \n✅ Исключить применение ст.131 УК РФ при рассмотрении дел по ст.132 УК РФ, и внести изменения в ст.ст.131-135 УК РФ (https://www.roi.ru/145071/) \n✅ Декриминализация неуплаты алиментов с заменой уголовной ответственности усиленными гражданскими мерами (https://www.roi.ru/145612/) \n✅ Введение симметричных критериев амнистии для граждан обоих полов (https://www.roi.ru/145608/)\n✅ Изменение законодательства для восстановления прав мужчин (https://www.roi.ru/136408/)\n✅ Совместное воспитание ребенка (https://www.roi.ru/126073/)\n✅ Обязательный тест ДНК (https://www.roi.ru/131210/)\n✅ Защита своего имущества в браке (https://www.roi.ru/126913/)\n✅ Реформа семейного законодательства (https://www.roi.ru/136408/)\n✅ Учёт реального вклада при разводе (https://www.roi.ru/135050/)\n✅ Поддержка многодетных отцов (https://www.roi.ru/128085/)\n✅ Центры поддержки для мужчин (https://www.roi.ru/128078/)\n✅ Программа по улучшению мужского здоровья (https://www.roi.ru/129541/)\n✅ Учёт интересов мужчин в демографической политике (https://www.roi.ru/135413/)\n\nГолосовать \"ПРОТИВ\" ❌:\n❌ Закон о домашнем насилии № 2 (https://www.roi.ru/129662/)\n❌ Упрощённое взыскание алиментов № 1 (https://www.roi.ru/134335/)\n❌ Упрощённое взыскание алиментов № 2 (https://www.roi.ru/135500/)\n❌ Налог на бездетность (https://www.roi.ru/123635/)\n❌ Выплата зарплаты женщинам в декрете в течение 3 лет (https://www.roi.ru/125421/)\n❌ Льготы беременным женщинам и матерям (https://www.roi.ru/131438/)\n❌ Льготы неработающим матерям (https://www.roi.ru/130926/)\n❌ Льготы матерям-одиночкам (https://www.roi.ru/128532/)\n❌ Льготы вдовам военнослужащих (https://www.roi.ru/133781/)"
 
 }
