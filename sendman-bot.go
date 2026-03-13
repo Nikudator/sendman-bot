@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -158,7 +159,7 @@ func createUser(tid int64, uname string, admin int64) error {
 		err := pool.QueryRow(context.Background(), queryCreate, tid, uname).Scan(&id)
 		failOnError(err, "Can't create user.\n")
 		log.Printf("Created user with ID: %d, TID: %d, NAME: %s.\n", id, tid, uname)
-		msg := tgbotapi.NewMessage(admin, "Ваше сообщение отправлено администраторам.")
+		msg := tgbotapi.NewMessage(admin, "Добавлен новый пользователь"+strconv.Itoa(id)+"\n"+uname+" ID: "+strconv.FormatInt(tid, 10))
 		bot.Send(msg)
 	}
 	return err
